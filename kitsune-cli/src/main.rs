@@ -2,20 +2,22 @@
 #![warn(clippy::all, clippy::pedantic)]
 #![allow(clippy::module_name_repetitions, forbidden_lint_groups)]
 
-use self::{config::Configuration, role::RoleSubcommand};
+use self::{config::Configuration, role::RoleSubcommand, user::UserSubcommand};
 use clap::{Parser, Subcommand};
-use std::error::Error;
-
-type Result<T, E = Box<dyn Error>> = std::result::Result<T, E>;
+use anyhow::{Error, Result};
 
 mod config;
 mod role;
+mod user;
 
 #[derive(Subcommand)]
 enum AppSubcommand {
     /// Manage roles for local users
     #[clap(subcommand)]
     Role(RoleSubcommand),
+    /// Manage local users
+    #[clap(subcommand)]
+    User(UserSubcommand),
 }
 
 /// CLI for the Kitsune social media server
@@ -38,6 +40,7 @@ async fn main() -> Result<()> {
 
     match cmd.subcommand {
         AppSubcommand::Role(cmd) => self::role::handle(cmd, &mut db_conn).await?,
+        AppSubcommand::User(cmd) => self::user::handle(cmd, &mut db_conn).await?,
     }
 
     Ok(())

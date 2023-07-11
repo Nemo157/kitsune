@@ -3728,12 +3728,18 @@ dependencies = [
 name = "kitsune-cli"
 version = "0.0.1-pre.1"
 dependencies = [
+ "anyhow",
+ "argon2",
  "clap",
  "diesel",
  "diesel-async",
  "dotenvy",
  "envy",
+ "hex-simd",
+ "iso8601-timestamp",
  "kitsune-db",
+ "rand",
+ "rsa 0.9.2",
  "serde",
  "speedy-uuid",
  "time",
