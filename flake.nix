@@ -3,11 +3,19 @@
     flake-utils.url = "github:numtide/flake-utils";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
+    cargo2nix = {
+      url = "github:cargo2nix/cargo2nix/f3f155be6487d2746fb0d5dd4e5b9d58f1658cbd";
+      inputs = {
+        flake-utils.follows = "flake-utils";
+        nixpkgs.follows = "nixpkgs";
+        rust-overlay.follows = "rust-overlay";
+      };
+    };
   };
-  outputs = { self, flake-utils, nixpkgs, rust-overlay }:
+  outputs = { self, flake-utils, nixpkgs, rust-overlay, cargo2nix }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [ (import rust-overlay) ];
+        overlays = [ (import rust-overlay) cargo2nix.overlays.default ];
         pkgs = import nixpkgs {
           inherit overlays system;
         };
@@ -64,23 +72,19 @@
             "--skip=json_request"
           ];
         };
+        rustPkgs = pkgs.rustBuilder.makePackageSet {
+          rustVersion = "latest";
+          packageFun = import ./Cargo.nix;
+          workspaceSrc = src;
+          rootFeatures = [ "kitsune/meilisearch" ];
+        };
       in
       {
         packages = rec {
           default = main;
-          cli = rustPlatform.buildRustPackage (basePackage // {
-            pname = "kitsune-cli";
-            cargoBuildFlags = "-p kitsune-cli";
-          });
-          main = rustPlatform.buildRustPackage (basePackage // {
-            pname = "kitsune";
-            buildFeatures = [ "meilisearch" ];
-            cargoBuildFlags = "-p kitsune";
-          });
-          search = rustPlatform.buildRustPackage (basePackage // {
-            pname = "kitsune-search";
-            cargoBuildFlags = "-p kitsune-search";
-          });
+          cli = (rustPkgs.workspace.kitsune-cli {}).bin;
+          main = (rustPkgs.workspace.kitsune { }).bin;
+          search = (rustPkgs.workspace.kitsune-search {}).bin;
           frontend = pkgs.mkYarnPackage {
             inherit version;
 
